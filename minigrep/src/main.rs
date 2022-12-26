@@ -16,7 +16,8 @@ fn usage(args: &Vec<String>) {
 
 struct Cli<'a> {
     pattern: &'a String,
-    paths: &'a [String],
+    paths: Vec<&'a String>,
+    inverted: bool
 }
 
 fn parse_args<'a>(args: &'a Vec<String>) -> Result<Cli<'a>, &'static str> {
@@ -24,12 +25,31 @@ fn parse_args<'a>(args: &'a Vec<String>) -> Result<Cli<'a>, &'static str> {
         return Err("<pattern> is required")
     }
 
-    let cli = Cli {
-        pattern: &args[1],
-        paths: &args[2..]
+    let mut pattern: Option<&String> = None;
+    let mut paths = vec![];
+    let mut inverted = false;
+
+    for a in args[1..].iter() {
+        if "-v" == a.as_str() {
+            inverted = true;
+        }
+        else if let None = pattern {
+            pattern = Some(a);
+        } else {
+            paths.push(a)
+        }
+
+    }
+
+    return match pattern { 
+        None => Err("<pattern> is required"),
+        Some(p) => Ok(Cli {
+            pattern: p,
+            paths: paths,
+            inverted: inverted
+        }),
     };
 
-    return Ok(cli)
 }
 
 fn error(reason: &dyn Display) {
@@ -56,6 +76,8 @@ fn main() {
         Ok(cli) => cli
     };
 
+    dbg!(cli.pattern, &cli.paths, cli.inverted);
+
 
     // build pattern
     let pattern = match Regex::new(cli.pattern) {
@@ -73,7 +95,7 @@ fn main() {
         }
     } else {
         // match against all paths
-        for filename in cli.paths {
+        for filename in &cli.paths {
             let mut lines = match File::open(filename) {
                 Err(what) => return error(&format!("Unable to open '{}': {}", filename, what)),
                 Ok(fh) => BufReader::new(fh).lines()
@@ -88,8 +110,9 @@ fn main() {
 
 
 fn match_and_print(pattern: &Regex, line: &String, cli: &Cli) {
-    if pattern.is_match(line) {
+    let matches = pattern.is_match(line);
+
+    if (match cli.inverted { true => !matches, false => matches }) {
         println!("{}", line);
     }
-
 }
