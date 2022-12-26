@@ -1,4 +1,5 @@
 use std::env;
+use std::fmt::Display;
 use std::io;
 use std::io::BufReader;
 use std::io::BufRead;
@@ -8,8 +9,9 @@ use regex::Regex;
 
 
 
+
 fn usage(args: &Vec<String>) {
-    println!("Usage: {0} <pattern> [file...]", args[0]);
+    eprintln!("Usage: {0} <pattern> [file...]", args[0]);
 }
 
 struct Cli<'a> {
@@ -30,6 +32,11 @@ fn parse_args<'a>(args: &'a Vec<String>) -> Result<Cli<'a>, &'static str> {
     return Ok(cli)
 }
 
+fn error(reason: &dyn Display) {
+    eprintln!("{}", reason);
+    std::process::exit(1);
+}
+
 
 /*
  * Entrypoint
@@ -37,19 +44,29 @@ fn parse_args<'a>(args: &'a Vec<String>) -> Result<Cli<'a>, &'static str> {
 fn main() {
     // parse arguments
     let args: Vec<String> = env::args().collect();
+
+    match args.get(1) {
+        Some(s) if ["--help", "-h", "-?"].contains(&s.as_str()) =>
+            return usage(&args),
+        Some(_) | None => ()
+    }
+
     let cli = match parse_args(&args) {
         Err(_what) => return usage(&args),
         Ok(cli) => cli
     };
 
+
     // build pattern
     let pattern = match Regex::new(cli.pattern) {
-        Err(what) => panic!("{}", what),
+        Err(what) => return error(&what),
         Ok(p) => p,
     };
 
+
+    // process input
     if cli.paths.len() < 1 || cli.paths[0] == "-" {
-        // match against stdio
+        // match against stdio 
         let mut lines = io::stdin().lines();
         while let Some(Ok(line)) = lines.next() {
             match_and_print(&pattern, &line, &cli);
@@ -58,7 +75,7 @@ fn main() {
         // match against all paths
         for filename in cli.paths {
             let mut lines = match File::open(filename) {
-                Err(what) => panic!("Unabled to open {}: {}", filename, what),
+                Err(what) => return error(&format!("Unable to open '{}': {}", filename, what)),
                 Ok(fh) => BufReader::new(fh).lines()
             };
             while let Some(Ok(line)) = lines.next() {
