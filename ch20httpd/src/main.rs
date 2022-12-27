@@ -6,14 +6,17 @@ use std::{
     net::{TcpListener, TcpStream},
     path::{PathBuf},
 };
+use ch20httpd::ThreadPool;
+use chrono;
 
 fn main() {
 
+    let thread_count = env::var("THREAD_COUNT").unwrap_or("4".to_string()).parse::<usize>().unwrap_or(4);
     let port = env::var("PORT").unwrap_or("7878".to_string());
     let host = env::var("HOST").unwrap_or("0.0.0.0".to_string());
     let address = format!("{}:{}", host, port);
 
-    let wwwroot: &String = &match env::var("WWWROOT") {
+    let wwwroot: String = match env::var("WWWROOT") {
         Ok(s) => s,
         Err(_) => env::current_dir().unwrap().into_os_string().into_string().unwrap(),
     };
@@ -27,9 +30,15 @@ fn main() {
 
     println!("Serving from {}", &wwwroot);
 
+
+    let pool = ThreadPool::new(thread_count);
+
     for stream in listener.incoming() { 
+        let c = wwwroot.clone();
         match stream {
-            Ok(stream) => handle_connection(stream, &wwwroot),
+            Ok(stream) => pool.execute(move || {
+                handle_connection(stream, &c)
+            }),
             Err(e) => eprintln!("Connection failed: {}", e)
         }
     }
@@ -45,6 +54,11 @@ fn handle_connection(mut stream: TcpStream, wwwroot: &String) {
 
     let request_line = &content[0];
     let _headers = &content[1..];
+
+    println!("{} - [{:?}] \"{}\"", 
+        stream.local_addr().unwrap(), 
+        chrono::offset::Utc::now(),
+        &request_line);
 
     let mut split = request_line.split(" ");
     let command = split.next();
