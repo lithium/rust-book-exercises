@@ -26,10 +26,11 @@ fn main() {
 
 
 
-    let vertices: [f32; 9] = [
-        -0.5, -0.5, 0.0,
-        0.5, -0.5, 0.0,
-        0.0, 0.5, 0.0
+    let vertices: [f32; 18] = [
+        //positions         // colors
+        -0.5, -0.5, 0.0,    1.0, 0.0, 0.0,
+         0.5, -0.5, 0.0,    0.0, 1.0, 0.0,        
+         0.0,  0.5, 0.0,    0.0, 0.0, 1.0,
     ];
 
     let mut vbo: GLuint = 0;
@@ -50,24 +51,38 @@ fn main() {
         gl::GenVertexArrays(1, &mut vao);
         gl::BindVertexArray(vao);
         gl::BindBuffer(gl::ARRAY_BUFFER, vbo);
+
         gl::EnableVertexAttribArray(0);
         gl::VertexAttribPointer(
             0,
             3, 
             gl::FLOAT, 
             gl::FALSE,
-            (3 * std::mem::size_of::<f32>()) as GLint,
+            (6 * std::mem::size_of::<f32>()) as GLint,
             std::ptr::null()
         );
+
+        gl::EnableVertexAttribArray(1);
+        gl::VertexAttribPointer(
+            1,
+            3, 
+            gl::FLOAT, 
+            gl::FALSE,
+            (6 * std::mem::size_of::<f32>()) as GLint,
+            (3 * std::mem::size_of::<f32>()) as *const GLvoid, 
+        );
+
         gl::BindBuffer(gl::ARRAY_BUFFER, 0);
         gl::BindVertexArray(0);
     }
 
+    unsafe {
+        gl::ClearColor(0.0, 0.0, 0.0, 1.0);
+    }
 
     while !window.should_close() {
         shader_program.use_program();
         unsafe {
-            gl::ClearColor(0.5, 0.3, 0.3, 1.0);
             gl::Clear(gl::COLOR_BUFFER_BIT);
 
             gl::BindVertexArray(vao);
