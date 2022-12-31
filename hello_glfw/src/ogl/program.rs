@@ -2,7 +2,6 @@ use gl;
 use std;
 use gl::types::*;
 use std::ptr;
-use std::ffi::{CString, CStr};
 
 use crate::ogl;
 use crate::ogl::shader::Shader;

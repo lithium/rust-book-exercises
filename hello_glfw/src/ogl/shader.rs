@@ -2,7 +2,7 @@ use gl;
 use std;
 use gl::types::*;
 use std::ptr;
-use std::ffi::{CString, CStr};
+use std::ffi::CString;
 
 use crate::ogl;
 

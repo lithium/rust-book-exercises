@@ -1,4 +1,5 @@
 use glfw::{Action, Context, Key};
+use gl::types::*;
 
 mod ogl;
 use crate::ogl::{Shader, Program};
@@ -23,10 +24,54 @@ fn main() {
     let shader_program = Program::from_shaders(&[vertex_shader, fragment_shader]).unwrap();
     shader_program.use_program();
 
+
+
+    let vertices: [f32; 9] = [
+        -0.5, -0.5, 0.0,
+        0.5, -0.5, 0.0,
+        0.0, 0.5, 0.0
+    ];
+
+    let mut vbo: GLuint = 0;
+    unsafe {
+        gl::GenBuffers(1, &mut vbo);
+        gl::BindBuffer(gl::ARRAY_BUFFER, vbo);
+        gl::BufferData(
+            gl::ARRAY_BUFFER,
+            (vertices.len() * std::mem::size_of::<f32>()) as GLsizeiptr,
+            vertices.as_ptr() as *const GLvoid,
+            gl::STATIC_DRAW
+        );
+        gl::BindBuffer(gl::ARRAY_BUFFER, 0);
+    }
+
+    let mut vao: GLuint = 0;
+    unsafe {
+        gl::GenVertexArrays(1, &mut vao);
+        gl::BindVertexArray(vao);
+        gl::BindBuffer(gl::ARRAY_BUFFER, vbo);
+        gl::EnableVertexAttribArray(0);
+        gl::VertexAttribPointer(
+            0,
+            3, 
+            gl::FLOAT, 
+            gl::FALSE,
+            (3 * std::mem::size_of::<f32>()) as GLint,
+            std::ptr::null()
+        );
+        gl::BindBuffer(gl::ARRAY_BUFFER, 0);
+        gl::BindVertexArray(0);
+    }
+
+
     while !window.should_close() {
+        shader_program.use_program();
         unsafe {
             gl::ClearColor(0.5, 0.3, 0.3, 1.0);
             gl::Clear(gl::COLOR_BUFFER_BIT);
+
+            gl::BindVertexArray(vao);
+            gl::DrawArrays(gl::TRIANGLES, 0, 3);
         }
 
         window.swap_buffers();
