@@ -1,15 +1,7 @@
-extern crate glfw;
 use glfw::{Action, Context, Key};
 
-extern crate gl;
-use gl::types::*;
-
-use std::str;
-use std::ptr;
-use std::ffi::CString;
-
-pub mod ogl;
-use crate::ogl::ogl::Shader;
+mod ogl;
+use crate::ogl::{Shader, Program};
 
 
 fn main() {
@@ -28,6 +20,8 @@ fn main() {
     let vertex_shader = Shader::from_source(&include_str!("shaders/triangle.vert"), gl::VERTEX_SHADER).unwrap();
     let fragment_shader = Shader::from_source(&include_str!("shaders/triangle.frag"), gl::FRAGMENT_SHADER).unwrap();
 
+    let shader_program = Program::from_shaders(&[vertex_shader, fragment_shader]).unwrap();
+    shader_program.use_program();
 
     while !window.should_close() {
         unsafe {
