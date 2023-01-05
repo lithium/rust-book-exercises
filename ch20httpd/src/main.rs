@@ -52,13 +52,22 @@ fn handle_connection(mut stream: TcpStream, wwwroot: &String) {
         .take_while(|line| !line.is_empty())
         .collect(); 
 
-    let request_line = &content[0];
-    let _headers = &content[1..];
+    let logline = match content.len() {
+      0 => "",
+      _ => &content[0]
+    };
 
     println!("{} - [{:?}] \"{}\"", 
         stream.local_addr().unwrap(), 
         chrono::offset::Utc::now(),
-        &request_line);
+        &logline);
+
+    if content.len() < 1 {
+      return
+    }
+
+    let request_line = &content[0];
+    let _headers = &content[1..];
 
     let mut split = request_line.split(" ");
     let command = split.next();
